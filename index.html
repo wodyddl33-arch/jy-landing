@@ -576,23 +576,35 @@ async function saveToSupabase(data) {
 
 // 솔라피 문자 발송
 async function sendSMS(to, text) {
-    const date = new Date().toISOString().replace('T',' ').slice(0,19);
-    const res = await fetch('https://api.solapi.com/messages/v4/send', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `HMAC-SHA256 apiKey=${SOLAPI_API_KEY}, date=${date}, salt=${Math.random().toString(36).slice(2)}, signature=TEMP`
-        },
-        body: JSON.stringify({
-            message: {
-                to: to,
-                from: SENDER_PHONE,
-                text: text
-            }
-        })
-    });
-    // 솔라피 실패해도 전체 프로세스 중단 안 함
-    if (!res.ok) console.warn('SMS 발송 실패 (계속 진행)');
+    try {
+        const date = new Date().toISOString();
+        const salt = Math.random().toString(36).slice(2);
+        
+        // HMAC-SHA256 서명 생성
+        const msgToSign = date + salt;
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(SOLAPI_API_SECRET);
+        const msgData = encoder.encode(msgToSign);
+        const cryptoKey = await crypto.subtle.importKey('raw', keyData, {name:'HMAC', hash:'SHA-256'}, false, ['sign']);
+        const sigBuffer = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+        const signature = Array.from(new Uint8Array(sigBuffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
+        
+        const res = await fetch('https://api.solapi.com/messages/v4/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `HMAC-SHA256 apiKey=${SOLAPI_API_KEY}, date=${date}, salt=${salt}, signature=${signature}`
+            },
+            body: JSON.stringify({
+                message: { to: to, from: SENDER_PHONE, text: text }
+            })
+        });
+        const result = await res.json();
+        if(!res.ok) console.warn('SMS 발송 실패:', result);
+        else console.log('SMS 발송 성공:', result);
+    } catch(e) {
+        console.warn('SMS 발송 오류 (계속 진행):', e);
+    }
 }
 
 // 텔레그램 알림
