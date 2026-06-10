@@ -191,6 +191,13 @@ padding: 4.5em 0; border-radius: 1em; text-align: center; max-width: 700px; back
       gtag('js', new Date());
       gtag('config', 'G-7HT5MW9WE7');
     </script>
+<!-- Danggeun Market Code -->
+<script src="https://karrot-pixel.business.daangn.com/karrot-pixel.js"></script>
+<script>
+  window.karrotPixel.init('1781075118631492001');
+  window.karrotPixel.track('ViewPage');
+</script>
+<!-- End Danggeun Market Code -->
 </head>
 <body>
     <section class="wrap">
@@ -543,6 +550,8 @@ ${name} 대표님, 무료심사 신청이 완료되었습니다.
 ⏰ ${new Date().toLocaleString('ko-KR')}`);
 
         // 완료 처리
+        // 당근 픽셀 전환 이벤트
+        if(window.karrotPixel) window.karrotPixel.track('CompleteRegistration');
         btn.textContent = '신청완료!';
         alert(`${name} 대표님, 신청이 완료되었습니다!
 담당자가 빠르게 연락드리겠습니다.`);
